@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empleo Cerca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="#buscar">Empleo Cerca</a>
+<nav id="tabs">
+<button class="tab active" data-tab="buscar">Buscar</button>
+<button class="tab" data-tab="cerca">Cerca de ti</button>
+<button class="tab" data-tab="vacantes">Puestos <span class="count" id="jobs-count">0</span></button>
+<button class="tab" data-tab="lista">Mi lista <span class="count" id="list-count">0</span></button>
+<button class="tab" data-tab="consejos">Consejos</button>
+</nav>
+</header>
+
+<main>
+<section id="buscar" class="panel active">
+<div class="hero">
+<h1>Encuentra trabajo en la zona donde vives</h1>
+<p>Escribe una ciudad o colonia y el puesto que buscas para encontrar negocios cercanos y explorar opciones laborales.</p>
+<form id="search-form" class="search-box">
+<input type="text" id="city-input" placeholder="Ej. Lerma, Toluca, Monterrey" autocomplete="off">
+<input type="text" id="hero-kw" placeholder="Puesto (opcional)" autocomplete="off">
+<select id="radius-select" aria-label="Radio de búsqueda">
+<option value="1000">1 km</option>
+<option value="2000" selected>2 km</option>
+<option value="5000">5 km</option>
+<option value="10000">10 km</option>
+</select>
+<button type="submit" id="search-btn">Buscar empleo</button>
+</form>
+<div class="quick" id="quick-cities">
+<span>Probar con:</span>
+<button type="button" data-city="Toluca, México">Toluca</button>
+<button type="button" data-city="Lerma, México">Lerma</button>
+<button type="button" data-city="Monterrey, México">Monterrey</button>
+<button type="button" data-city="Guadalajara, México">Guadalajara</button>
+</div>
+<p id="status" class="status" role="status"></p>
+</div>
+
+<div class="stats" id="stats" hidden>
+<div><strong id="stat-place">-</strong><span>Zona</span></div>
+<div><strong id="stat-companies">0</strong><span>Negocios cercanos</span></div>
+<div><strong id="stat-jobs">0</strong><span>Puestos</span></div>
+<div><strong id="stat-salary">-</strong><span>Sueldo promedio</span></div>
+</div>
+
+<div class="how-it-works">
+<article><span>1</span><div><h3>Elige tu zona</h3><p>Busca por ciudad o colonia.</p></div></article>
+<article><span>2</span><div><h3>Compara opciones</h3><p>Filtra por sector, modalidad, turno y sueldo.</p></div></article>
+<article><span>3</span><div><h3>Guarda y actúa</h3><p>Guarda puestos para explorar, revisa el mapa y prepara tu visita.</p></div></article>
+</div>
+
+<div class="sectors" id="sector-chips" hidden></div>
+
+<h2 class="block-title">Puestos frecuentes para explorar</h2>
+<div id="suggest-list" class="job-list"></div>
+</section>
+
+<section id="cerca" class="panel">
+<div class="split">
+<div id="map"></div>
+<aside class="side">
+<h2>Negocios cerca de <span id="place-name">tu zona</span></h2>
+<ul id="company-list" class="company-list"></ul>
+<p class="empty" id="company-empty">Haz una búsqueda para ver los negocios cercanos.</p>
+</aside>
+</div>
+</section>
+
+<section id="vacantes" class="panel">
+<div class="filters">
+<input type="search" id="kw-input" placeholder="Puesto o empresa (ej. cajero, enfermera)">
+<select id="sector-select"><option value="">Todos los sectores</option></select>
+<select id="mode-select">
+<option value="">Cualquier modalidad</option>
+<option>Presencial</option>
+<option>Híbrido</option>
+<option>Remoto</option>
+</select>
+<select id="shift-select">
+<option value="">Cualquier turno</option>
+<option>Matutino</option>
+<option>Vespertino</option>
+<option>Mixto</option>
+<option>Tiempo completo</option>
+</select>
+<label class="range">Sueldo mínimo: <b id="salary-out">$0</b>
+<input type="range" id="salary-range" min="0" max="20000" step="1000" value="0">
+</label>
+<select id="sort-select">
+<option value="dist">Más cercanas</option>
+<option value="salary">Mayor sueldo</option>
+</select>
+<button type="button" id="clear-filters" class="ghost">Limpiar</button>
+</div>
+<div id="job-list" class="job-list"></div>
+<p class="empty" id="job-empty">Busca una ciudad para ver puestos.</p>
+</section>
+
+<section id="lista" class="panel">
+<div class="two-col">
+<div>
+<h2>Guardadas</h2>
+<div id="saved-list" class="job-list compact"></div>
+<p class="empty" id="saved-empty">Aún no guardas ninguna vacante.</p>
+</div>
+<div>
+<h2>Seguimiento de puestos</h2>
+<div id="applied-list" class="job-list compact"></div>
+<p class="empty" id="applied-empty">Aún no agregas ningún puesto a tu seguimiento.</p>
+</div>
+</div>
+<button type="button" id="clear-list" class="ghost">Borrar mi lista</button>
+</section>
+
+<section id="consejos" class="panel">
+<h2>Antes de postularte</h2>
+<div class="tips">
+<article>
+<h3>Prepara tu CV</h3>
+<p>Una hoja, datos de contacto actualizados y experiencia ordenada de la más reciente a la más antigua.</p>
+</article>
+<article>
+<h3>Revisa el trayecto</h3>
+<p>Compara la distancia con tu tiempo de traslado. Un trabajo cercano ahorra pasaje y horas.</p>
+</article>
+<article>
+<h3>Lleva documentos</h3>
+<p>Identificación oficial, comprobante de domicilio, CURP y comprobante de estudios.</p>
+</article>
+<article>
+<h3>Pregunta por prestaciones</h3>
+<p>Seguro social, aguinaldo, vacaciones y horario. Confirma todo antes de aceptar.</p>
+</article>
+<article>
+<h3>Escucha con atención</h3>
+<p>En la entrevista explica qué sabes hacer y pide ejemplos claros de las tareas diarias.</p>
+</article>
+<article>
+<h3>Verifica antes de viajar</h3>
+<p>Llama o confirma por redes oficiales que la vacante siga disponible y el domicilio sea correcto.</p>
+</article>
+<article>
+<h3>Protege tus datos</h3>
+<p>Desconfía de depósitos adelantados, compras de equipo o datos bancarios antes de firmar.</p>
+</article>
+</div>
+<div class="checklist-heading">
+<h2>Lista de verificación</h2>
+<span id="checklist-progress">0 de 5 completados</span>
+</div>
+<div class="progress-track" aria-hidden="true"><div id="checklist-bar"></div></div>
+<ul class="checklist" id="checklist">
+<li><label><input type="checkbox"> CV actualizado</label></li>
+<li><label><input type="checkbox"> Documentos en una carpeta</label></li>
+<li><label><input type="checkbox"> Revisé la ruta y el horario</label></li>
+<li><label><input type="checkbox"> Investigué a la empresa</label></li>
+<li><label><input type="checkbox"> Preparé respuestas para la entrevista</label></li>
+</ul>
+</section>
+</main>
+
+<dialog id="job-dialog">
+<article id="dialog-body"></article>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<footer>Datos de mapa de OpenStreetMap</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
